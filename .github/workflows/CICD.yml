@@ -21,3 +21,23 @@ jobs:
         ls
         mvn package --file pom.xml
 
+ 
+  depchecktest:
+    runs-on: ubuntu-latest
+    name: depecheck_test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Depcheck
+        uses: dependency-check/Dependency-Check_Action@main
+        id: Depcheck
+        with:
+          project: 'Project-Document'
+          path: '.'
+          format: 'HTML'
+          out: 'reports.json' # this is the default, no need to specify unless you wish to override it
+          args: >
+            --failOnCVSS 7
+            --enableRetired
+
+
