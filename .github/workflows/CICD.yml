@@ -67,7 +67,7 @@ jobs:
     - name: Gitleaks scan
       run: gitleaks detect --source . -r gitleaks-report -f json
       
-   compile:
+   Test:
     runs-on: ubuntu-latest
 
     steps:
