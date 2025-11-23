@@ -44,7 +44,7 @@ jobs:
 
   security-scan:
     runs-on: ubuntu-latest
-    needs: depecheck_test
+    needs: depchecktest
     
     - uses: actions/checkout@v4
     - name: Installation Trivy
