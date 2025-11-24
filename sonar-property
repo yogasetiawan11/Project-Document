@@ -1,0 +1,3 @@
+sonar.projectKey=Bank-app
+sonar.projectName=Bank-app
+sonar.java.binaries=.
