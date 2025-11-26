@@ -66,6 +66,7 @@ jobs:
 
     - name: Gitleaks scan
       run: |
+        sudo apt install unzip
         pwd
         gitleaks detect --source . -r gitleaks-report -f json
       
