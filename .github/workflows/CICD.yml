@@ -7,8 +7,9 @@ on:
 jobs:
   clean-up:
     runs-on: self-hosted
-    - name: clean up machine 
-      run: sudo rm -rf /home/yogaw/actions-runner/_work/Project-Document/
+    steps:
+      - name: clean up machine 
+        run: sudo rm -rf /home/yogaw/actions-runner/_work/Project-Document/
       
   compile:
     runs-on: self-hosted
