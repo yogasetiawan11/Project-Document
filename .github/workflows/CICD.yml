@@ -4,13 +4,7 @@ on:
   push:
     branches: [ "main" ]
 
-jobs:
-  clean-up:
-    runs-on: self-hosted
-    steps:
-      - name: clean up machine 
-        run: sudo rm -rf /home/yogaw/actions-runner/_work/Project-Document/
-      
+jobs: 
   compile:
     runs-on: self-hosted
     needs: clean-up
