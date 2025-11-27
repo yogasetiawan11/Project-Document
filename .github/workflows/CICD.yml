@@ -3,124 +3,107 @@ name: CICD automation
 on:
   push:
     branches: [ "main" ]
-    
+
 jobs:
   compile:
     runs-on: self-hosted
-
     steps:
-    - uses: actions/checkout@v4
-    - name: Set up JDK 17
-      uses: actions/setup-java@v4
-      with:
-        java-version: '17'
-        distribution: 'temurin'
-        cache: maven
-    - name: Build with Maven
-      run: |
-        ls
-        mvn package --file pom.xml
+      - uses: actions/checkout@v4
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+      - name: Build with Maven
+        run: mvn package --file pom.xml
 
- 
   depchecktest:
     runs-on: self-hosted
     needs: compile
-    
     name: depecheck_test
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Depcheck
         uses: dependency-check/Dependency-Check_Action@main
-        id: Depcheck
         with:
           project: 'Project-Document'
           path: '.'
           format: 'HTML'
-          out: 'dependency-check-report' # this is the default, no need to specify unless you wish to override it
+          out: 'dependency-check-report'
           args: >
             --failOnCVSS 7
             --enableRetired
       - name: Fix ownership of report files
         run: sudo chown -R $USER:$USER dependency-check-report
 
-
   security-scan:
     runs-on: self-hosted
     needs: depchecktest
-    
     name: trivy
     steps:
-    - uses: actions/checkout@v4
-    - name: Installation Trivy
-      run: |
-        sudo apt-get install wget gnupg
-        wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | gpg --dearmor | sudo tee /usr/share/keyrings/trivy.gpg > /dev/null
-        echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb generic main" | sudo tee -a /etc/apt/sources.list.d/trivy.list
-        sudo apt-get update -y
-        sudo apt-get install trivy -y
+      - uses: actions/checkout@v4
 
-    - name: Trivy-FS-scan
-      run: trivy fs --format table -o fs.report.json .
+      - name: Install Trivy
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget gnupg
+          wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | gpg --dearmor | sudo tee /usr/share/keyrings/trivy.gpg > /dev/null
+          echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb generic main" | sudo tee /etc/apt/sources.list.d/trivy.list
+          sudo apt-get update
+          sudo apt-get install -y trivy
 
+      - name: Trivy FS scan
+        run: trivy fs --format table -o fs.report.json .
 
-    - name: Gitleaks-installation
-      run: sudo apt install gitleaks -y
+      - name: Install Gitleaks
+        run: sudo apt-get install -y gitleaks unzip
 
-    - name: Gitleaks scan
-      run: |
-        sudo apt install unzip
-        pwd
-        gitleaks detect --source . -r gitleaks-report -f json
-      
+      - name: Gitleaks scan
+        run: gitleaks detect --source . -r gitleaks-report -f json
+
   Test:
     runs-on: self-hosted
     needs: security-scan
     steps:
-    - uses: actions/checkout@v4
-    - name: Set up JDK 17
-      uses: actions/setup-java@v4
-      with:
-        java-version: '17'
-        distribution: 'temurin'
-        cache: maven
-    - name: Test case
-      run: mvn test
+      - uses: actions/checkout@v4
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+      - name: Run tests
+        run: mvn test
 
-  
   sonar_scan:
     runs-on: self-hosted
     needs: Test
     steps:
-    - uses: actions/checkout@v4
-      with:
-        fetch-depth: 0  # Full history needed for accurate diff analysis
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history needed for accurate diff analysis
 
-    - name: Set up JDK 17
-      uses: actions/setup-java@v4
-      with:
-        java-version: '17'
-        distribution: 'temurin'
-        cache: maven
-    - name: package-artifact
-      run: mvn package
-   
-    
-    - uses: actions/checkout@v4
-      with:
-        # Disabling shallow clones is recommended for improving the relevancy of reporting
-        fetch-depth: 0
-    - name: SonarQube Scan
-      uses: SonarSource/sonarqube-scan-action@v6.0.0 # Ex: v4.1.0 or sha1, See the latest version at https://github.com/marketplace/actions/official-sonarqube-scan
-      env:
-        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
 
-    - name: SonarQube Quality Gate check
-      id: sonarqube-quality-gate-check
-      uses: sonarsource/sonarqube-quality-gate-action@master
-      with:
-        pollingTimeoutSec: 600
-      env:
-        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }} #OPTIONAL
+      - name: Build for Sonar (must happen after checkout, before scan)
+        run: mvn package -DskipTests
 
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v4 
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }} 
+
+      - name: SonarQube Quality Gate check
+        uses: sonarsource/sonarqube-quality-gate-action@v1 
+        with:
+          pollingTimeoutSec: 600
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
