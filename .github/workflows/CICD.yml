@@ -53,9 +53,16 @@ jobs:
 
       - name: Trivy FS scan
         run: trivy fs --format table -o fs.report.json .
+ 
+  secret-scan:
+    runs-on: self-hosted
+    needs: security-scan
+    name: gitleaks
+    steps:
+      - uses: actions/checkout@v4
 
       - name: Install Gitleaks
-        run: sudo apt-get install -y gitleaks unzip
+        run: sudo apt install gitleaks -y
 
       - name: Gitleaks scan
         run: gitleaks detect --source . -r gitleaks-report -f json
