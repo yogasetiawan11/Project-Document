@@ -112,7 +112,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: app-jar
-          path: app
+          path: app # Download to app/ directory
 
       - name: Login to Docker Hub
         uses: docker/login-action@v3
