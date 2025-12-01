@@ -54,7 +54,7 @@ jobs:
       - name: Trivy FS scan
         run: trivy fs --format table -o fs.report.json .
 
-  Test:
+  Test-app:
     runs-on: self-hosted
     needs: security-scan
     steps:
@@ -70,7 +70,7 @@ jobs:
 
   sonar_scan:
     runs-on: self-hosted
-    needs: Test
+    needs: Test-app
     steps:
       - uses: actions/checkout@v4
         with:
@@ -82,9 +82,8 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
           cache: maven
-
       - name: Build for Sonar # (must happen after checkout, before scan)
-        run: mvn package -DskipTests
+        run: mvn package
 
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@v4 
