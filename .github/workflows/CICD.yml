@@ -86,9 +86,6 @@ jobs:
       - name: Build for Sonar # (must happen after checkout, before scan)
         run: mvn package -DskipTests
 
-      - name: sonar-scanner debug 
-        run: sonar-scanner -X
-
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@v4 
         env:
