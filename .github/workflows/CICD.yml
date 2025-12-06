@@ -97,10 +97,17 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
           SONAR_PROJECT_KEY: bank-app
-  docker-build-push:
+  docker_build_push:
     runs-on: self-hosted
     needs: sonar_scan
     steps:
+      - uses: actions/checkout@v4
+      - name: Download jar artifact
+        uses: Download-artifact/action@v4
+        with:
+          name: app-jar
+          path: app
+          
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
@@ -119,3 +126,23 @@ jobs:
           push: true
           tags: yogas4/bank-app:v1.0.0
           file: ./Dockerfile
+  Deploy_to_Kubernetes:
+    runs-on: self-hosted
+    needs: docker_build_push
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'latest'
+
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p $HOME/.kube
+          echo "$KUBECONFIG_CONTENT" | base64 -d > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+        env:
+          KUBECONFIG_CONTENT: ${{ secrets.KUBECONFIG }}
+
+      - name: Deploy to cluster
+        run: kubectl apply -f k8s/ 
