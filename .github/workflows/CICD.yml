@@ -108,7 +108,7 @@ jobs:
  
   docker_build_push:
     runs-on: self-hosted
-    needs: build_project_sonar_scanar_scan
+    needs: build_project_sonar_scan
     steps:
       - uses: actions/checkout@v4
       - name: Download jar artifact
